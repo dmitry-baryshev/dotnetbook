@@ -1,4 +1,4 @@
-![IDisposable cover](./imgs/Disposable-Cover.png)
+![IDisposable cover](../imgs/Disposable-Cover.png)
 
 # Disposable pattern (Disposable Design Principle)
 

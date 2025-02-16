@@ -42,7 +42,7 @@ The second variant of the method can signal some problems with input data: the r
 
 Exceptions handling might look as easy as ABC: we just need to place `try-catch` blocks and wait for corresponding events. However, this simplicity became possible due to the tremendous work of CLR and CoreCLR teams that unified all the errors that come from all directions and sources into the CLR. To understand what we are going to talk about next, let’s look at a diagram:
 
-![](./imgs/CommonScheme.png)
+![](../imgs/CommonScheme.png)
 
 We can see that inside big .NET Framework there are two worlds: everything that belongs to CLR and everything that doesn’t, including all possible errors appearing in Windows and other parts of the unsafe world.
 
@@ -203,7 +203,7 @@ static bool Check(Exception ex)
 }
 ```
 
-![Stack without unrolling](./imgs/StackWOutUnrolling.png)
+![Stack without unrolling](../imgs/StackWOutUnrolling.png)
 
 You can see from the image that the stack trace contains not only the first call of `Main` as the point to catch an exception, but the whole stack before the point of throwing an exception plus the second entering into `Main` via unmanaged code. We can suppose that this code is exactly the code for throwing exceptions that is in the stage of filtering and choosing a final handler. However, _not all calls can be handled without stack unrolling_. I believe that excessive uniformity of the platform generates too much confidence in it. For example, when one domain calls a method from another domain it is absolutely transparent in terms of code. However, the way methods calls work is an absolutely different story. We are going to talk about them in the next part.
 
@@ -255,11 +255,11 @@ Let’s start by looking at the results of running the following code (I added t
 
 We can see that stack unrolling happens before we get to filtering. Let’s look at screenshots. The first is taken before the generation of an exception:
 
-![StackUnroll](./imgs/StackUnroll.png)
+![StackUnroll](../imgs/StackUnroll.png)
 
 The second one is after it:
 
-![StackUnroll2](./imgs/StackUnroll2.png)
+![StackUnroll2](../imgs/StackUnroll2.png)
 
 Let’s study call tracing before and after exceptions are filtered. What happens here? We can see that platform developers made something that at first glance looks like the protection of a subdomain. The tracing is cut after the last method in the call chain and then there is the transfer to another domain. But I think this looks strange. To understand why this happens let’s remember the main rule for types that organize the interaction between domains. These types should inherit `MarshalByRefObject` and be serializable. However, despite the strictness of C# exception types can be of any nature. What does it mean? This means that situations may occur when an exception inside a subdomain can be caught in a parent domain. Also, if a data object that can get into an exceptional situation has some methods that are dangerous in terms of security they can be called in a parent domain. To avoid this, the exception is first serialized and then it crosses the boundary between application domains and appears again with a new stack. Let’s check this theory:
 
@@ -315,7 +315,7 @@ public class ProxyRunner : MarshalByRefObject
 
 For C# code could throw an exception of any type (I don’t want to torture you with MSIL) I performed a trick in this example casting a type to a noncomparable one, so we could throw an exception of any type, but the translator would think that we use `Exception` type. We create an instance of the `Program` type, which is not serializable for sure, and throw an exception using this type as workload. The good news is that you get a wrapper for non-Exception exceptions of `RuntimeWrappedException` which will store an instance of our `Program` type object inside and we will be able to catch this exception. However, there is bad news that supports our idea: calling `proxy.MethodInsideAppDomain();` will generate `SerializationException`:
 
-![](./imgs/SerializationError.png)
+![](../imgs/SerializationError.png)
 
 Thus, you can’t transfer such an exception between domains as it is not possible to serialize it. This, in turn, means that using exception filters for wrapping methods calls in other domains will anyway lead to stack unrolling despite that the serialization seems to be unnecessary with `FullTrust` settings of a subdomain.
 

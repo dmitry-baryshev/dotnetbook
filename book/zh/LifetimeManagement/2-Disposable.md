@@ -1,4 +1,4 @@
-![IDisposable cover](./imgs/Disposable-Cover.png)
+![IDisposable cover](../imgs/Disposable-Cover.png)
 
 # 一次性模式（一次性设计原则）
 
